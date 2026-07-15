@@ -1,0 +1,22 @@
+{
+	"nodes": [
+		{"id":"grp_research","type":"group","label":"1. 리서치 (입력)","x":-960,"y":-460,"width":440,"height":640,"color":"3"},
+		{"id":"grp_copy","type":"group","label":"2. 카피 (글)","x":-460,"y":-460,"width":440,"height":640,"color":"4"},
+		{"id":"grp_web","type":"group","label":"3. 웹 (HTML)","x":40,"y":-460,"width":440,"height":640,"color":"5"},
+		{"id":"n_persona","type":"text","x":-920,"y":-400,"width":360,"height":250,"color":"3","text":"## [리서치] 타겟 페르소나\n- 제품: AI 브랜드 카피 서비스 카피루멘\n- 대상: 1인 소규모 브랜드 대표 (28~42세)\n- 상황: 마케팅 인력 X, 카피 쓸 시간 X\n- 산출: 페르소나 3줄 요약"},
+		{"id":"n_pain","type":"text","x":-920,"y":-110,"width":360,"height":250,"color":"3","text":"## [리서치] 페인 & 베네핏\n- 페인: 카피 못 씀 / 외주 비쌈 / 톤 일관성 X\n- 베네핏: 30초 완성 / 브랜드톤 학습 / 무제한 수정\n- 산출: 페인3 베네핏3"},
+		{"id":"n_hero","type":"text","x":-420,"y":-400,"width":360,"height":250,"color":"4","text":"## [글] 히어로 카피\n- 입력: 페르소나 + 페인/베네핏\n- 지시: 헤드라인+서브+CTA, A/B/C 3버전\n  (감성형 / 혜택형 / 호기심형)\n- 산출: out/01_카피.md"},
+		{"id":"n_benefit","type":"text","x":-420,"y":-110,"width":360,"height":250,"color":"4","text":"## [글] 베네핏 3블록\n- 입력: 페인/베네핏 노드\n- 지시: 아이콘문구 + 제목 + 2줄 설명 x3\n- 산출: out/01_카피.md 에 추가"},
+		{"id":"n_htmlhero","type":"text","x":80,"y":-400,"width":360,"height":250,"color":"5","text":"## [웹] 히어로 섹션\n- 입력: 히어로 카피(A안 채택)\n- 지시: 풀스크린 히어로, 모바일 반응형\n  CTA 버튼, 그라디언트 배경\n- 산출: index.html 히어로부"},
+		{"id":"n_build","type":"text","x":80,"y":-110,"width":360,"height":250,"color":"5","text":"## [웹] 랜딩 조립 -> index.html\n- 입력: 히어로섹션 + 베네핏3블록\n- 지시: 히어로 + 베네핏 + CTA풋터\n  모바일 우선, 단일 HTML(인라인 CSS)\n- 산출: out/index.html"}
+	],
+	"edges": [
+		{"id":"e1","fromNode":"n_persona","fromSide":"right","toNode":"n_hero","toSide":"left"},
+		{"id":"e2","fromNode":"n_pain","fromSide":"right","toNode":"n_hero","toSide":"left"},
+		{"id":"e3","fromNode":"n_pain","fromSide":"right","toNode":"n_benefit","toSide":"left"},
+		{"id":"e4","fromNode":"n_hero","fromSide":"right","toNode":"n_htmlhero","toSide":"left","label":"A안"},
+		{"id":"e5","fromNode":"n_hero","fromSide":"right","toNode":"n_build","toSide":"left"},
+		{"id":"e6","fromNode":"n_benefit","fromSide":"right","toNode":"n_build","toSide":"left"},
+		{"id":"e7","fromNode":"n_htmlhero","fromSide":"bottom","toNode":"n_build","toSide":"top"}
+	]
+}
