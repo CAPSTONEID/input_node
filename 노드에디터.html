@@ -112,6 +112,8 @@ svg#wires path.wire.sel{stroke:#f85149;stroke-width:3.5;}
 .node .ttl{flex:1;font-size:13px;font-weight:600;background:transparent;border:none;color:var(--text);outline:none;min-width:0;}
 .node .del{color:var(--muted);cursor:pointer;font-size:14px;line-height:1;border:none;background:transparent;padding:0 2px;}
 .node .del:hover{color:#f85149;}
+.node .cpjson{color:var(--muted);cursor:pointer;font-size:12px;line-height:1;border:none;background:transparent;padding:0 3px;flex-shrink:0;}
+.node .cpjson:hover{color:var(--accent);}
 .node .sub{display:flex;align-items:center;gap:7px;padding:0 10px 6px 10px;border-bottom:1px solid var(--line);}
 .node .tag{flex:1;font-size:11px;font-weight:700;background:transparent;border:none;outline:none;min-width:0;}
 .node input,.node textarea{font-family:inherit;}
@@ -173,7 +175,7 @@ body.showpath .node .pathrow{display:block;}
     <div class="loopmsg" id="loopIndMsg">각 노드의 Loop 아이콘을 클릭하여 설정하세요.</div>
     <div id="loopAllCfg" style="display:none">
       <label class="sblab">반복 횟수</label>
-      <input class="fld" id="loopCount" type="number" min="1" value="1">
+      <input class="fld" id="loopCount" type="number" min="1" max="10" value="1">
       <label class="sblab">루프 기준</label>
       <textarea class="fld" id="loopCriteria" placeholder="루프 기준"></textarea>
     </div>
@@ -288,7 +290,7 @@ body.showpath .node .pathrow{display:block;}
   function renderAll(){Object.values(els).forEach(e=>e.remove());els={};state.nodes.forEach(addNodeEl);drawWires();refreshMeta();refreshSel();updateStats();applyFilter();}
   function addNodeEl(n){
     const el=document.createElement('div');el.className='node';el.style.left=n.x+'px';el.style.top=n.y+'px';el.dataset.id=n.id;
-    el.innerHTML='<div class="head"><button class="swatch"></button><input class="ttl" placeholder="제목"><button class="del" title="삭제">x</button></div>'
+    el.innerHTML='<div class="head"><button class="swatch"></button><input class="ttl" placeholder="제목"><button class="cpjson" title="이 노드 JSON 명령 복사">⧉</button><button class="del" title="삭제">x</button></div>'
       +'<div class="sub"><span class="grab" title="드래그하여 이동"><svg viewBox="0 0 24 24" width="13" height="13" fill="currentColor"><path d="M13 24c-1.9 0-3.6-.8-5-2.2l-4.3-4.3c-.6-.6-.6-1.5 0-2.1.6-.6 1.5-.6 2.1 0l1.2 1.2V6.5C7 5.7 7.7 5 8.5 5S10 5.7 10 6.5V12h.5V4.5c0-.8.7-1.5 1.5-1.5s1.5.7 1.5 1.5V12h.5V5.5C14.5 4.7 15.2 4 16 4s1.5.7 1.5 1.5V12h.5V8.5C18 7.7 18.7 7 19.5 7S21 7.7 21 8.5V16c0 4.4-3.1 8-8 8z"/></svg></span><input class="tag" placeholder="분류"><button class="looppill" title="Loop 반복 설정">Loop</button></div>'
       +'<textarea class="spec" spellcheck="false"></textarea>'
       +'<div class="loopedit"><div class="looptoprow"><span class="looplabel">Loop</span><button class="toggle looptoggle" title="켜기/끄기"></button></div><div class="loopnum"><input class="loopslider" type="range" min="1" max="10" step="1"><input class="loopcount" type="number" min="1" max="10"></div><textarea class="loopcrit" placeholder="루프 기준"></textarea><div class="looprowbtn"><button class="loopcancel">취소</button><button class="loopsave">저장</button></div></div>'
@@ -316,6 +318,7 @@ body.showpath .node .pathrow{display:block;}
     el.querySelector('.loopsave').addEventListener('click',ev=>{ev.stopPropagation();ledit.classList.remove('open');save();drawWires();});
     el.querySelector('.loopcancel').addEventListener('click',ev=>{ev.stopPropagation();if(loopSnap)n.loop=JSON.parse(JSON.stringify(loopSnap));loopRefresh();ledit.classList.remove('open');save();drawWires();});
     el.querySelector('.del').addEventListener('click',e=>{e.stopPropagation();removeNode(n.id);});
+    el.querySelector('.cpjson').addEventListener('click',e=>{e.stopPropagation();const w=nodeCmd(n);openModal('노드 JSON 명령','이 노드 하나만 실행하는 명령입니다. 복사해 AI에게 붙여넣으세요.',w,[{label:'복사',fn:()=>{try{navigator.clipboard.writeText(w);}catch(_){}document.getElementById('mText').select();}},{label:'닫기',fn:closeModal}],true);});
     sw.addEventListener('click',e=>{e.stopPropagation();openColorMenu(sw.getBoundingClientRect(),c=>{n.color=c;sw.style.background=c;tagI.style.color=c;save();drawWires();});});
     el.querySelectorAll('.port').forEach(pt=>pt.addEventListener('mousedown',e=>{e.stopPropagation();startConnect(n,pt.dataset.side,e);}));
     el.querySelector('.resize').addEventListener('mousedown',e=>{e.preventDefault();e.stopPropagation();const w0=n.w||236,h0=n.specH||70,px=e.clientX,py=e.clientY;
@@ -479,10 +482,18 @@ body.showpath .node .pathrow{display:block;}
   function openModal(title,desc,text,buttons,ro){document.getElementById('mTitle').textContent=title;document.getElementById('mDesc').textContent=desc;const ta=document.getElementById('mText');ta.value=text;if(ro)ta.setAttribute('readonly','');else ta.removeAttribute('readonly');const row=document.getElementById('mRow');row.innerHTML='';buttons.forEach(bt=>{const el=document.createElement('button');el.className='tb';el.textContent=bt.label;el.onclick=bt.fn;row.appendChild(el);});modal.classList.add('open');}
   function closeModal(){modal.classList.remove('open');}
   modal.addEventListener('click',e=>{if(e.target===modal)closeModal();});
+  /* 위상 레벨 = 병렬 그룹. 같은 stage 안 노드는 서로 의존 없음 → 병렬 처리 가능 */
+  function computeStages(){const ns=state.nodes,adj={},ind={};ns.forEach(n=>{adj[n.id]=[];ind[n.id]=0;});state.edges.forEach(e=>{if(ind[e.to]===undefined||!adj[e.from]||e.from===e.to)return;adj[e.from].push(e.to);ind[e.to]++;});const lvl={},ind2=Object.assign({},ind);let q=ns.filter(n=>ind[n.id]===0).map(n=>n.id);q.forEach(id=>lvl[id]=0);while(q.length){const nx=[];q.forEach(id=>adj[id].forEach(t=>{lvl[t]=Math.max(lvl[t]||0,(lvl[id]||0)+1);if(--ind2[t]===0)nx.push(t);}));q=nx;}const st=[];ns.forEach(n=>{const L=lvl[n.id]||0;(st[L]=st[L]||[]).push(n.id);});return st.filter(Boolean);}
+  /* 내보내기 시 활성 루프모델만 방출(자기완결 JSON). loop 키 존재=활성 */
+  function normLoops(o){const L=o.loop||{};if(!L.enabled){delete o.loop;o.nodes.forEach(n=>delete n.loop);return;}if(L.mode==='global'){o.loop={mode:'global',count:L.count,criteria:L.criteria};o.nodes.forEach(n=>delete n.loop);return;}delete o.loop;o.nodes.forEach(n=>{if(n.loop&&n.loop.on)n.loop={count:n.loop.count,criteria:n.loop.criteria};else delete n.loop;});}
+  /* 노드 1개의 실효 루프(전역 mode 반영). 없으면 null */
+  function effLoop(n){const L=state.loop||{};if(!L.enabled)return null;if(L.mode==='global')return{count:L.count,criteria:L.criteria||DEFCRIT};return(n.loop&&n.loop.on)?{count:n.loop.count,criteria:n.loop.criteria||DEFCRIT}:null;}
+  /* 노드 1개 단독 실행용 JSON 명령. deps=직속 상위 노드(입력 맥락) */
+  function nodeCmd(n){const deps=state.edges.filter(e=>e.to===n.id).map(e=>byId(e.from)).filter(Boolean).map(p=>({id:p.id,title:p.title,tag:p.tag,spec:p.spec}));const node={id:n.id,title:n.title,tag:n.tag,spec:n.spec},el=effLoop(n);if(el)node.loop=el;const obj={project:{name:projName.value,desc:projDesc.value},node:node,deps:deps};return '아래 노드 하나의 산출물만 제작해줘. node=제작 대상, deps=이 노드가 입력으로 받는 상위 노드(맥락), project=전체 맥락. tag=분류, spec=지시서, loop=반복 설정(있으면 criteria 충족까지 최대 count번 반복).\n\n```json\n'+JSON.stringify(obj,null,2)+'\n```';}
   function exportJSON(){return JSON.stringify({version:2,project:{name:projName.value,desc:projDesc.value},loop:{enabled:state.loop.enabled,mode:state.loop.mode,count:state.loop.count,criteria:state.loop.criteria||DEFCRIT},nodes:state.nodes.map(n=>({id:n.id,title:n.title,tag:n.tag,color:n.color,spec:n.spec,loop:{on:n.loop.on,count:n.loop.count,criteria:n.loop.criteria||DEFCRIT},x:Math.round(n.x),y:Math.round(n.y)})),edges:state.edges},null,2);}
   document.getElementById('btnExport').addEventListener('click',()=>{
-    const json=exportJSON();
-    const wrapped='아래 노드 구조(AI 이식)를 읽고, edges 순서대로 각 노드의 산출물을 순서에 맞게 제작해줘.\nproject=프로젝트 이름/설명(전체 맥락), tag=분류, spec=지시서, loop=반복 설정(enabled=true일 때만 적용; mode=global이면 전체를 count번 criteria 기준으로 반복, individual이면 loop.on인 노드만 각자의 count/criteria로 반복)다.\n\n```json\n'+json+'\n```';
+    const base=JSON.parse(exportJSON());base.stages=computeStages();normLoops(base);const json=JSON.stringify(base,null,2);
+    const wrapped='아래 노드 구조(AI 이식)를 읽고 각 노드의 산출물을 제작해줘.\nstages=병렬 처리 그룹(위상 정렬 레벨)이다. 같은 stage 안 노드끼리는 서로 의존이 없어 실행 순서가 자유롭다 — 병렬 실행이 가능하면 병렬로, 아니면 임의 순서로 하나씩 처리해도 결과가 같다. 단 stage 순서(앞→뒤)는 반드시 지켜라(앞 stage 산출물이 뒤 stage 입력). edges=의존 관계(from→to면 from 결과를 to 입력으로).\nproject=프로젝트 이름/설명(전체 맥락), tag=분류, spec=지시서다. loop=반복 설정(있을 때만 반복): 최상위 loop.mode=global이면 전체 그래프를 loop.count번(criteria 충족까지) 반복, 노드에 loop가 있으면 그 노드만 criteria 충족까지 최대 count번 반복, loop 키가 없으면 반복하지 않는다.\n\n```json\n'+json+'\n```';
     openModal('AI 이식 (JSON)','아래 전체를 복사해 AI에게 붙여넣으세요. (또는 nodes.json 다운로드)',wrapped,[
       {label:'복사',fn:()=>{try{navigator.clipboard.writeText(wrapped);}catch(e){}document.getElementById('mText').select();}},
       {label:'JSON 다운로드',fn:()=>{const blob=new Blob([json],{type:'application/json'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='nodes.json';a.click();}},
@@ -549,7 +560,7 @@ body.showpath .node .pathrow{display:block;}
   loopEnable.addEventListener('click',()=>{state.loop.enabled=!state.loop.enabled;applyLoopUI();save();});
   loopModeInd.addEventListener('click',()=>{state.loop.mode='individual';applyLoopUI();save();});
   loopModeAll.addEventListener('click',()=>{state.loop.mode='global';applyLoopUI();save();});
-  loopCount.addEventListener('input',()=>{state.loop.count=Math.max(1,parseInt(loopCount.value)||1);save();});
+  loopCount.addEventListener('input',()=>{state.loop.count=Math.max(1,Math.min(10,parseInt(loopCount.value)||1));save();});
   loopCriteria.addEventListener('input',()=>{state.loop.criteria=loopCriteria.value;save();});
 
   load();
